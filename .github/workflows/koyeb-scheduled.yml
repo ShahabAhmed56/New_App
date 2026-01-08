@@ -1,0 +1,57 @@
+name: Koyeb Scheduled Deployment (20:05 UTC) 
+
+on:
+  schedule:
+    # Runs daily at 20:05 UTC (change time here if needed) 
+    - cron: "05 20 * * *" 
+  workflow_dispatch:  # Optional manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch full history
+
+      - name: Calculate last scheduled time
+        id: lasttime
+        run: |
+          # Current date & time in UTC
+          NOW=$(date -u '+%Y-%m-%d %H:%M:%S')
+          echo "Now UTC: $NOW"
+
+          # Calculate last scheduled run (yesterday at 20:05 UTC) 
+          LAST_RUN=$(date -u -d 'yesterday 20:05' '+%Y-%m-%d %H:%M:%S') 
+          echo "Last scheduled run: $LAST_RUN"
+
+          # Save for later steps
+          echo "last_run=$LAST_RUN" >> $GITHUB_OUTPUT
+
+      - name: Check commits since last scheduled run
+        id: changes
+        run: |
+          # Use last_run from previous step
+          LAST_RUN="${{ steps.lasttime.outputs.last_run }}"
+
+          # Check commits since last_run
+          if git log --since="$LAST_RUN" --oneline | grep .; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "Commits found since last scheduled deployment."
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "No commits since last scheduled deployment."
+          fi
+
+      - name: Skip deployment if no commits
+        if: steps.changes.outputs.deploy == 'false'
+        run: echo "Skipping deployment. No new commits since last 20:05." 
+
+      - name: Deploy to Koyeb
+        if: steps.changes.outputs.deploy == 'true'
+        run: |
+          echo "Deploying latest code to Koyeb..."
+          curl -X POST "https://app.koyeb.com/v1/services/${{ secrets.KOYEB_SERVICE_ID }}/redeploy" \
+          -H "Authorization: Bearer ${{ secrets.KOYEB_TOKEN }}"
