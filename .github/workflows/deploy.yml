@@ -3,7 +3,7 @@ name: Daily Production Deployment
 on:
   schedule:
     # 3:00 PM Pakistan Time (UTC+5) = 10:00 UTC
-    - cron: "00 10 * * *"
+    - cron: "10 10 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -22,8 +22,11 @@ jobs:
       
       - name: Install Koyeb CLI
         run: |
-          curl -fsSL https://get.koyeb.com/install.sh | sh
-          echo "$HOME/.koyeb/bin" >> $GITHUB_PATH
+          # Download directly from GitHub releases
+          curl -L -o koyeb.tar.gz https://github.com/koyeb/koyeb-cli/releases/download/v4.5.3/koyeb-cli_4.5.3_linux_amd64.tar.gz
+          tar -xzf koyeb.tar.gz
+          sudo mv koyeb /usr/local/bin/
+          sudo chmod +x /usr/local/bin/koyeb
       
       - name: Verify Koyeb CLI
         env:
