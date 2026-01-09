@@ -2,8 +2,7 @@ name: Daily Production Deployment
 
 on:
   schedule:
-    # 3:00 PM Pakistan Time (UTC+5) = 10:00 UTC
-    - cron: "00 10 * * *"
+    - cron: "25 10 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -18,18 +17,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install Koyeb CLI
+      - name: Setup Koyeb CLI
         run: |
-          # Use GitHub CLI to download from releases
-          wget -q https://github.com/koyeb/koyeb-cli/releases/latest/download/koyeb-cli_linux_amd64.tar.gz -O koyeb.tar.gz
-          tar -xzf koyeb.tar.gz
-          sudo mv koyeb /usr/local/bin/
+          wget -q https://github.com/koyeb/koyeb-cli/releases/latest/download/koyeb-cli_linux_amd64.tar.gz
+          tar -xzf koyeb-cli_linux_amd64.tar.gz
+          sudo mv koyeb /usr/local/bin/koyeb
           sudo chmod +x /usr/local/bin/koyeb
-          koyeb version
       
-      - name: Deploy to Koyeb
+      - name: Verify CLI Installation
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
-        uses: koyeb/action-git-deploy@v1
-        with:
-          app-name: new-app
+        run: |
+          koyeb version
+          echo "Listing services..."
+          koyeb services list
+      
+      - name: Redeploy Service
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+        run: |
+          koyeb service redeploy new-app
