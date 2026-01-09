@@ -2,8 +2,8 @@ name: Daily Production Deployment
 
 on:
   schedule:
-    # 1 AM Pakistan Time = 20:00 UTC (previous day)
-    - cron: "25 9 * * *"
+    # 2:40 PM Pakistan Time (UTC+5) = 09:40 UTC
+    - cron: "40 9 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -20,13 +20,11 @@ jobs:
         with:
           ref: main
 
-      - name: Install Koyeb CLI
-        run: |
-          curl -fsSL https://get.koyeb.com/install.sh | sh
-          echo "$HOME/.koyeb/bin" >> $GITHUB_PATH
+      - name: Set up Koyeb CLI
+        uses: koyeb/action-github@v1
+        with:
+          api_token: ${{ secrets.KOYEB_TOKEN }}
 
       - name: Deploy to Koyeb
-        env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
         run: |
           koyeb service redeploy new-app
