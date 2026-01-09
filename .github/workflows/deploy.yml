@@ -1,14 +1,9 @@
 name: Daily Production Deployment
-
 on:
-  schedule:
-    - cron: "56 10 * * *"
   workflow_dispatch:
-
 concurrency:
   group: koyeb-prod
   cancel-in-progress: false
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
