@@ -23,9 +23,7 @@ jobs:
       - name: Install Koyeb CLI
         run: |
           set -e
-          KOYEB_VERSION="v2.7.1"
-          curl -L https://github.com/koyeb/koyeb/releases/download/${KOYEB_VERSION}/koyeb-linux-amd64 \
-            -o koyeb
+          curl -fL https://github.com/koyeb/koyeb/releases/latest/download/koyeb-linux-amd64 -o koyeb
           chmod +x koyeb
           sudo mv koyeb /usr/local/bin/koyeb
 
