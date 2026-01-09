@@ -1,0 +1,32 @@
+name: Daily Production Deployment
+
+on:
+  schedule:
+    # 1 AM Pakistan Time = 20:00 UTC (previous day)
+    - cron: "25 9 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: koyeb-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install Koyeb CLI
+        run: |
+          curl -fsSL https://get.koyeb.com/install.sh | sh
+          echo "$HOME/.koyeb/bin" >> $GITHUB_PATH
+
+      - name: Deploy to Koyeb
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+        run: |
+          koyeb service redeploy new-app
