@@ -20,11 +20,20 @@ jobs:
         with:
           ref: main
 
-      - name: Set up Koyeb CLI
-        uses: koyeb/action-github@v1
-        with:
-          api_token: ${{ secrets.KOYEB_TOKEN }}
+      - name: Install Koyeb CLI
+        run: |
+          set -e
+          KOYEB_VERSION="v2.7.1"
+          curl -L https://github.com/koyeb/koyeb/releases/download/${KOYEB_VERSION}/koyeb-linux-amd64 \
+            -o koyeb
+          chmod +x koyeb
+          sudo mv koyeb /usr/local/bin/koyeb
+
+      - name: Verify Koyeb CLI
+        run: koyeb version
 
       - name: Deploy to Koyeb
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
         run: |
           koyeb service redeploy new-app
