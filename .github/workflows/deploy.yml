@@ -2,7 +2,7 @@ name: Daily Production Deployment
 
 on:
   schedule:
-    - cron: "25 10 * * *"
+    - cron: "00 10 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -17,23 +17,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Koyeb CLI
-        run: |
-          wget -q https://github.com/koyeb/koyeb-cli/releases/latest/download/koyeb-cli_linux_amd64.tar.gz
-          tar -xzf koyeb-cli_linux_amd64.tar.gz
-          sudo mv koyeb /usr/local/bin/koyeb
-          sudo chmod +x /usr/local/bin/koyeb
-      
-      - name: Verify CLI Installation
+      - name: Get Service ID by App URL
+        id: get-service
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
         run: |
-          koyeb version
-          echo "Listing services..."
-          koyeb services list
+          # Get all services and find the one with your app URL
+          SERVICE_DATA=$(curl -s -H "Authorization: Bearer $KOYEB_TOKEN" \
+            "https://app.koyeb.com/v1/services")
+          
+          # Look for service with your app domain
+          SERVICE_ID=$(echo "$SERVICE_DATA" | jq -r '.services[] | select(.active_deployment.definition.routes[].path | contains("naked-chastity-progressivesol-78a3f4da")) | .id' | head -n1)
+          
+          if [ -z "$SERVICE_ID" ]; then
+            echo "Trying alternative method..."
+            # Alternative: get first service (if you only have one)
+            SERVICE_ID=$(echo "$SERVICE_DATA" | jq -r '.services[0].id')
+          fi
+          
+          if [ -z "$SERVICE_ID" ]; then
+            echo "Error: Could not find service"
+            exit 1
+          fi
+          
+          echo "service_id=$SERVICE_ID" >> $GITHUB_OUTPUT
+          echo "Found service ID: $SERVICE_ID"
       
       - name: Redeploy Service
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
         run: |
-          koyeb service redeploy new-app
+          curl -X POST \
+            -H "Authorization: Bearer $KOYEB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://app.koyeb.com/v1/services/${{ steps.get-service.outputs.service_id }}/redeploy"
+          
+          echo "✅ Deployment triggered successfully!"
