@@ -1,50 +1,50 @@
-name: Daily Production Deployment
-on:
-  workflow_dispatch:
-concurrency:
-  group: koyeb-prod
-  cancel-in-progress: false
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# name: Daily Production Deployment
+# on:
+#   workflow_dispatch:
+# concurrency:
+#   group: koyeb-prod
+#   cancel-in-progress: false
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
       
-      - name: Get Service ID by App URL
-        id: get-service
-        env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
-        run: |
-          # Get all services and find the one with your app URL
-          SERVICE_DATA=$(curl -s -H "Authorization: Bearer $KOYEB_TOKEN" \
-            "https://app.koyeb.com/v1/services")
+#       - name: Get Service ID by App URL
+#         id: get-service
+#         env:
+#           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+#         run: |
+#           # Get all services and find the one with your app URL
+#           SERVICE_DATA=$(curl -s -H "Authorization: Bearer $KOYEB_TOKEN" \
+#             "https://app.koyeb.com/v1/services")
           
-          # Look for service with your app domain
-          SERVICE_ID=$(echo "$SERVICE_DATA" | jq -r '.services[] | select(.active_deployment.definition.routes[].path | contains("naked-chastity-progressivesol-78a3f4da")) | .id' | head -n1)
+#           # Look for service with your app domain
+#           SERVICE_ID=$(echo "$SERVICE_DATA" | jq -r '.services[] | select(.active_deployment.definition.routes[].path | contains("naked-chastity-progressivesol-78a3f4da")) | .id' | head -n1)
           
-          if [ -z "$SERVICE_ID" ]; then
-            echo "Trying alternative method..."
-            # Alternative: get first service (if you only have one)
-            SERVICE_ID=$(echo "$SERVICE_DATA" | jq -r '.services[0].id')
-          fi
+#           if [ -z "$SERVICE_ID" ]; then
+#             echo "Trying alternative method..."
+#             # Alternative: get first service (if you only have one)
+#             SERVICE_ID=$(echo "$SERVICE_DATA" | jq -r '.services[0].id')
+#           fi
           
-          if [ -z "$SERVICE_ID" ]; then
-            echo "Error: Could not find service"
-            exit 1
-          fi
+#           if [ -z "$SERVICE_ID" ]; then
+#             echo "Error: Could not find service"
+#             exit 1
+#           fi
           
-          echo "service_id=$SERVICE_ID" >> $GITHUB_OUTPUT
-          echo "Found service ID: $SERVICE_ID"
+#           echo "service_id=$SERVICE_ID" >> $GITHUB_OUTPUT
+#           echo "Found service ID: $SERVICE_ID"
       
-      - name: Redeploy Service
-        env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer $KOYEB_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://app.koyeb.com/v1/services/${{ steps.get-service.outputs.service_id }}/redeploy"
+#       - name: Redeploy Service
+#         env:
+#           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+#         run: |
+#           curl -X POST \
+#             -H "Authorization: Bearer $KOYEB_TOKEN" \
+#             -H "Content-Type: application/json" \
+#             "https://app.koyeb.com/v1/services/${{ steps.get-service.outputs.service_id }}/redeploy"
           
-          echo "✅ Deployment triggered successfully!"
+#           echo "✅ Deployment triggered successfully!"
